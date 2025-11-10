@@ -16,16 +16,19 @@ O **Dapper** é um micro ORM (Object-Relational Mapping) criado pela equipe do S
 ```
 Curso.Dapper.Api/
 ├── Controllers/
-│   └── Entidades/
-│       └── Aluno.cs          # 📝 Modelo de domínio
+│   └── AlunosController.cs   # 🎮 Controller REST API com CRUD completo
+├── Entidades/
+│   └── Aluno.cs              # 📝 Modelo de domínio
 ├── Scripts/
-│   └── Scripts.sql           # 🗄️ Scripts SQL da tabela ALUNOS
+│   └── Scripts.sql           # 🗄️ Scripts SQL da tabela ALUNOS + dados
 ├── Properties/
 │   └── launchSettings.json   # ⚙️ Configurações de execução
+├── .vscode/                  # 🔧 Configurações do VS Code
 ├── oracle-data/              # 🗄️ Volume Docker (dados Oracle)
 ├── Program.cs                # 🚀 Entry point da aplicação
 ├── docker-compose.yaml       # 🐳 Configuração do banco Oracle
 ├── appsettings.json          # ⚙️ Configurações da aplicação
+├── Curso.Dapper.Api.csproj   # 📦 Arquivo do projeto .NET
 ├── .gitignore                # 🚫 Arquivos ignorados pelo Git
 └── README.md                 # 📖 Este arquivo
 ```
@@ -130,8 +133,119 @@ CREATE SEQUENCE SEQ_ALUNOS_ID START WITH 1;
 -- Trigger para popular ID automaticamente
 CREATE OR REPLACE TRIGGER TRG_ALUNOS_ID ...
 
--- Query de teste
+-- 15 registros de exemplo inseridos
+INSERT INTO ALUNOS (NOME, EMAIL, ...) VALUES (...)
+
+-- Consultas de verificação e estatísticas
 SELECT * FROM ALUNOS;
+```
+
+## 🎮 **API REST Implementada**
+
+### 📋 **Endpoints Disponíveis:**
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|---------|
+| GET | `/Alunos` | Listar todos os alunos | ✅ Funcionando |
+| GET | `/Alunos/{id}` | Buscar aluno por ID | ✅ Funcionando |
+| POST | `/Alunos` | Cadastrar novo aluno | ✅ Funcionando |
+| PUT | `/Alunos/{id}` | Atualizar aluno completo | ✅ Funcionando |
+| DELETE | `/Alunos/{id}` | Deletar aluno | ✅ Funcionando |
+
+### 🔧 **Tecnologias Implementadas:**
+
+#### **Dapper + Oracle:**
+```csharp
+// Conexão Oracle configurada
+using var connection = new OracleConnection(_connectionString);
+
+// Sintaxe Oracle com parâmetros nomeados
+var aluno = await connection.QuerySingleOrDefaultAsync<Aluno>(
+    "SELECT * FROM ALUNOS WHERE ID = :id", new { id });
+```
+
+#### **SqlKata Query Builder:**
+```csharp
+// Query Builder para consultas dinâmicas
+var query = new Query("ALUNOS").Select("*").OrderBy("ID");
+var sqlResult = _compiler.Compile(query);
+var alunos = await connection.QueryAsync<Aluno>(sqlResult.Sql, sqlResult.NamedBindings);
+```
+
+#### **Oracle Features:**
+```csharp
+// INSERT com RETURNING (Oracle específico)
+INSERT INTO ALUNOS (...) VALUES (...) RETURNING ID INTO :id
+
+// Funções Oracle
+SYSTIMESTAMP, USER, // AUTO-INCREMENT via SEQUENCE + TRIGGER
+```
+
+## 🧪 **Exemplos de Uso da API**
+
+### 📋 **1. Listar Todos os Alunos**
+```bash
+GET https://localhost:7275/Alunos
+```
+**Resposta:**
+```json
+[
+  {
+    "id": 1,
+    "nome": "João Silva Santos",
+    "email": "joao.silva@email.com",
+    "dataNascimento": "1995-03-15T00:00:00",
+    "ativo": true,
+    "dataCadastro": "2025-11-08T10:30:00",
+    "dataAtualizacao": null,
+    "curso": "Engenharia de Software",
+    "turma": "ES-2024-1",
+    "turno": "NOITE"
+  }
+]
+```
+
+### 🔍 **2. Buscar Aluno por ID**
+```bash
+GET https://localhost:7275/Alunos/1
+```
+
+### ➕ **3. Cadastrar Novo Aluno**
+```bash
+POST https://localhost:7275/Alunos
+Content-Type: application/json
+
+{
+  "nome": "Ana Costa Silva",
+  "email": "ana.costa@email.com",
+  "dataNascimento": "1998-05-20",
+  "ativo": true,
+  "curso": "Ciência da Computação",
+  "turma": "CC-2024-2",
+  "turno": "MANHÃ"
+}
+```
+
+### ✏️ **4. Atualizar Aluno**
+```bash
+PUT https://localhost:7275/Alunos/1
+Content-Type: application/json
+
+{
+  "nome": "João Silva Santos Junior",
+  "email": "joao.junior@email.com",
+  "dataNascimento": "1995-03-15",
+  "ativo": true,
+  "curso": "Engenharia de Software",
+  "turma": "ES-2024-1",
+  "turno": "INTEGRAL"
+}
+```
+
+### 🗑️ **5. Deletar Aluno**
+```bash
+DELETE https://localhost:7275/Alunos/1
+```
 ```
 
 ## 🛠️ Tecnologias Utilizadas
@@ -149,10 +263,13 @@ SELECT * FROM ALUNOS;
 - **Language PL/SQL** - Syntax highlighting para PL/SQL
 - **GitLens** - Melhor integração com Git
 
-### 📦 Pacotes NuGet (Próximos)
+### 📦 Pacotes NuGet Instalados
 ```xml
-<PackageReference Include="Dapper" Version="2.1.24" />
-<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.130" />
+<PackageReference Include="Dapper" Version="2.1.66" />
+<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.0" />
+<PackageReference Include="SqlKata" Version="4.0.1" />
+<PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
 ```
 
 ## 📚 Roadmap de Aprendizado
@@ -166,27 +283,33 @@ SELECT * FROM ALUNOS;
 - [x] Sequência e trigger para auto-increment
 - [x] Scripts SQL organizados na pasta Scripts/
 
-### 🔄 Fase 2: Implementação Dapper (Próximo)
-- [ ] Instalar pacote Dapper e Oracle.ManagedDataAccess
-- [ ] Configurar string de conexão Oracle
-- [ ] Criar classe de conexão com Oracle
-- [ ] Implementar Repository Pattern
-- [ ] Criar operações CRUD básicas
+### ✅ Fase 2: Implementação Dapper (Concluído!)
+- [x] Instalar pacote Dapper e Oracle.ManagedDataAccess
+- [x] Instalar SqlKata para Query Builder
+- [x] Configurar string de conexão Oracle
+- [x] Implementar Controller com operações CRUD
+- [x] Criar operações CRUD básicas funcionais
+- [x] Configurar Swagger/OpenAPI
+- [x] Mapear controllers no Program.cs
 
-### 📋 Fase 3: Operações Avançadas (Planejado)
+### � Fase 3: Operações Avançadas (Próximo)
 - [ ] Queries complexas com JOIN
-- [ ] Stored Procedures e Packages
+- [ ] Stored Procedures e Packages Oracle
 - [ ] Transações e controle de concorrência
-- [ ] Mapeamento de relacionamentos
-- [ ] Paginação e ordenação
-- [ ] Bulk operations
+- [ ] Mapeamento de relacionamentos (1:N, N:N)
+- [ ] Paginação e ordenação dinâmica
+- [ ] Bulk operations (inserção em lote)
+- [ ] Filtros dinâmicos com SqlKata
 
 ### 🎯 Fase 4: Boas Práticas (Planejado)
-- [ ] Tratamento de exceções
-- [ ] Logging estruturado
-- [ ] Testes unitários
+- [ ] Repository Pattern e Dependency Injection
+- [ ] Tratamento de exceções personalizado
+- [ ] Logging estruturado (Serilog)
+- [ ] Testes unitários (xUnit + Moq)
 - [ ] Performance e otimização
-- [ ] Documentação da API (Swagger)
+- [x] Documentação da API (Swagger) ✅
+- [ ] Versionamento de API
+- [ ] Autenticação e Autorização
 
 ## 🚀 Como Executar
 
@@ -227,28 +350,35 @@ SELECT * FROM ALUNOS;
    ```
 
 6. **Acesse a API**
-   - API: `https://localhost:7000`
-   - Swagger: `https://localhost:7000/swagger` (quando implementado)
+   - API: `https://localhost:7275` (ou porta configurada)
+   - Swagger: `https://localhost:7275/swagger`
+   - OpenAPI: `https://localhost:7275/openapi/v1.json`
 
 ## 📖 Conceitos de Dapper (A Implementar)
 
-### Connection Management Oracle
+### Connection Management Oracle (Implementado)
 ```csharp
-// Instalar pacotes necessários
-// dotnet add package Dapper
-// dotnet add package Oracle.ManagedDataAccess.Core
+// ✅ Pacotes instalados
+// Dapper 2.1.66
+// Oracle.ManagedDataAccess.Core 23.26.0
+// SqlKata 4.0.1
 
-// Configuração da conexão no appsettings.json
+// ✅ Configuração no appsettings.json
 "ConnectionStrings": {
-  "OracleConnection": "Data Source=localhost:1521/XEPDB1;User Id=system;Password=oracle;"
+  "OracleConnection": "User Id=appuser;Password=app123;Data Source=localhost:1521/XEPDB1;"
 }
 
-// Configuração no Program.cs
-services.AddScoped<IDbConnection>(provider =>
-    new OracleConnection(connectionString));
-```
+// ✅ Configuração no Controller
+private readonly string _connectionString;
+private readonly OracleCompiler _compiler;
 
-### Query Básica Oracle
+public AlunosController(IConfiguration configuration)
+{
+    _connectionString = configuration.GetConnectionString("OracleConnection") ??
+                      "Data Source=localhost:1521/XEPDB1;User Id=system;Password=oracle;";
+    _compiler = new OracleCompiler();
+}
+```### Query Básica Oracle
 ```csharp
 // SELECT simples
 var alunos = connection.Query<Aluno>("SELECT * FROM ALUNOS ORDER BY ID");

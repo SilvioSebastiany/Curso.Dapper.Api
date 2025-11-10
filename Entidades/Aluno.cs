@@ -1,6 +1,4 @@
-using System.Data;
-
-namespace Controllers.Entidades
+namespace Curso.Dapper.Api.Entidades
 {
     public class Aluno
     {
